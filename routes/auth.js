@@ -1,0 +1,87 @@
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const config = require('config');
+const auth = require('../middleware/auth');
+const { check, validationResult } = require('express-validator');
+
+const User = require('../models/User');
+
+// @route   GET api/auth
+// @desc    Get logged in user
+// @access  Private
+
+// when we get the protected route, it will access our middleware <auth.js>
+router.get('/', auth, async (req, res) => {
+  try {
+    // Using async-await as findById returns a promise. the req will return UserId and password
+    // which we only need the UserID
+    const user = await User.findById(req.user.id).select('-password');
+    res.json(user);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   POST api/auth
+// @desc    Auth user and get token
+// @access  Public
+
+// Using express-validator to ensure email and password is entered
+router.post(
+  '/',
+  [
+    check('email', 'Please include a valid email').isEmail(),
+    check('password', 'Password is required').exists()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password } = req.body;
+
+    // if no user is found, return status 400
+    try {
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        return res.status(400).json({ msg: 'Invalid Credentials' });
+      }
+
+      //   if password is not match, return status 400
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      if (!isMatch) {
+        return res.status(400).json({ msg: 'Invalid Credentials' });
+      }
+
+      //   if user is found, extract user.id and sign it with jsonwebtoken
+      const payload = {
+        user: {
+          id: user.id
+        }
+      };
+
+      jwt.sign(
+        payload,
+        config.get('jwtSecret'),
+        {
+          expiresIn: 360000
+        },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
+        }
+      );
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Server Error!!');
+    }
+  }
+);
+
+module.exports = router;
