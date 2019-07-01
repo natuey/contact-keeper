@@ -33,19 +33,12 @@ const ContactForm = () => {
 
   const onSubmit = e => {
     e.preventDefault();
-
     if (current === null) {
       addContact(contact);
     } else {
       updateContact(contact);
     }
-
-    setContact({
-      name: '',
-      email: '',
-      phone: '',
-      type: 'personal'
-    });
+    clearAll();
   };
 
   const clearAll = () => {
@@ -55,7 +48,7 @@ const ContactForm = () => {
   return (
     <form onSubmit={onSubmit}>
       <h2 className='text-primary'>
-        {current ? 'Edit Contact' : 'Add New Contact'}
+        {current ? 'Edit Contact' : 'Add Contact'}
       </h2>
       <input
         type='text'
@@ -82,22 +75,23 @@ const ContactForm = () => {
       <input
         type='radio'
         name='type'
-        value='Personal'
-        check={type === 'personal'}
+        value='personal'
+        checked={type === 'personal'}
         onChange={onChange}
-      />
+      />{' '}
       Personal{' '}
       <input
         type='radio'
         name='type'
-        value='Professiona'
-        check={type === 'professional'}
-      />
-      Professional{' '}
+        value='professional'
+        checked={type === 'professional'}
+        onChange={onChange}
+      />{' '}
+      Professional
       <div>
         <input
           type='submit'
-          value={current ? 'Update Contact' : 'Add New Contact'}
+          value={current ? 'Update Contact' : 'Add Contact'}
           className='btn btn-primary btn-block'
         />
       </div>
